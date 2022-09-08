@@ -1,0 +1,49 @@
+#Exploring and preparing the data
+wine <- read.csv("whitewines.csv")
+str(wine)
+hist(wine$quality) #looking at the distribution of the outcome variable.The wine quality values appear to follow a fairly normal, bell-shaped distribution, centered around a value of six
+summary(wine)
+wine_train <- wine[1:3750, ] #training data set
+wine_test <- wine[3751:4898, ] #test data set
+
+#training the model on the data
+install.packages("rpart") #installing rpart package
+library(rpart)
+m.rpart <- rpart(quality ~ ., data = wine_train)
+m.rpart
+summary(m.rpart)
+
+#Visualizing decision trees
+install.packages("rpart plot") #installing the relevant package
+library(rpart.plot)
+rpart.plot(m.rpart, digits = 3) #the digits parameter that controls the number of numeric digits to include in the diagram
+rpart.plot(m.rpart, digits = 4, fallen.leaves = TRUE,
+           type = 3, extra = 101) #The fallen.leaves parameter forces the leaf nodes to be aligned at the bottom of the plot, while the type and extra parameters affect the way the decisions and nodes are labeled
+#Evaluating Model performance
+p.rpart <- predict(m.rpart, wine_test) #Using the regression tree to make predictions on the test data
+summary(p.rpart)#summary statistics of our predictions. The predictions fall on a much narrower range than the true values. This finding suggests that the model is not correctly identifying the extreme cases, in particular the best and worst wines. On the other hand, between the first and third quartile, we may be doing well.
+summary(wine_test$quality) #summary of actual quality. 
+
+cor(p.rpart, wine_test$quality) #The correlation between the predicted and actual quality values provides a simple way to gauge the model's performance. A correlation of 0.49 is certainly acceptable. However, the correlation only measures how strongly the predictions are related to the true value; it is not a measure of how far off the predictions were from the true values.
+
+#Measuring performance with mean absolute error
+MAE <- function(actual, predicted) {
+  mean(abs(actual - predicted)) 
+} #how far, on average, its prediction was from the true value. Here we create an MAE() function
+
+MAE(wine_test$quality, p.rpart) #MAE for our predictions. This implies that, on average, the difference between our model's predictions and the true quality score was about 0.57. On a quality scale from zero to 10, this seems to suggest that our model is doing fairly well.
+mean(wine_train$quality)#mean quality rating
+mean_abserror(5.87, wine_test$quality) #If we predicted the value 5.88 for every wine sample, we would have a mean absolute error of
+
+#Improving model performance
+###To improve the performance of our learner, let's try to build a model tree. Recall that a model tree improves on regression trees by replacing the leaf nodes with regression models. This often results in more accurate results than regression trees, which use only a single value for prediction at the leaf nodes.
+install.packages("RWeka")
+library(RWeka)
+m.m5p <- M5P(quality ~ ., data = wine_train) #building the model using M5P function
+m.m5p
+summary(m.m5p) #For statistics on how well the model fits the training data
+
+p.m5p <- predict(m.m5p, wine_test) #Looking at how the model performs on the unseen data
+summary(p.m5p)
+cor(p.m5p, wine_test$quality)
+MAE(wine_test$quality, p.m5p)
